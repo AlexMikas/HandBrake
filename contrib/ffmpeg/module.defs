@@ -1,4 +1,4 @@
-__deps__ := BZIP2 ZLIB FDKAAC LIBVPX LAME LIBOPUS LIBSPEEX XZ
+__deps__ := BZIP2 ZLIB FDKAAC LIBVPX LAME LIBOPUS LIBSPEEX XZ LIBAOM
 ifeq (1,$(FEATURE.qsv))
 __deps__ += LIBMFX
 endif
@@ -47,6 +47,7 @@ FFMPEG.CONFIGURE.extra = \
     --enable-libspeex \
     --disable-encoder=libspeex \
     --enable-decoder=libspeex \
+    --enable-libaom \
     --enable-libvpx \
     --disable-decoder=libvpx_* \
     --enable-encoder=libvpx_vp8 \
