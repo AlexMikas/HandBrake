@@ -328,6 +328,23 @@ static int avformatInit( hb_mux_object_t * m )
             }
         } break;
 
+        case HB_VCODEC_AV1:
+        {
+            track->st->codecpar->codec_id = AV_CODEC_ID_AV1;
+
+            if (job->config.av1.seq_length != 0)
+            {
+                priv_size = job->config.av1.seq_length;
+                priv_data = av_malloc(priv_size + AV_INPUT_BUFFER_PADDING_SIZE);
+                if (priv_data == NULL)
+                {
+                    hb_error("AV1 extradata: malloc failure");
+                    goto error;
+                }
+                memcpy(priv_data, job->config.av1.seq, priv_size);
+            }
+        } break;
+
         case HB_VCODEC_X265_8BIT:
         case HB_VCODEC_X265_10BIT:
         case HB_VCODEC_X265_12BIT:

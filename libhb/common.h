@@ -504,6 +504,7 @@ struct hb_job_s
 #define HB_VCODEC_MASK         0x00FFFFF
 #define HB_VCODEC_INVALID      0x0000000
 #define HB_VCODEC_THEORA       0x0000002
+#define HB_VCODEC_AV1          0x0000004
 #define HB_VCODEC_FFMPEG_MPEG4 0x0000010
 #define HB_VCODEC_FFMPEG_MPEG2 0x0000020
 #define HB_VCODEC_FFMPEG_VP8   0x0000040
@@ -1224,6 +1225,7 @@ extern hb_work_object_t hb_encavcodec;
 extern hb_work_object_t hb_encqsv;
 extern hb_work_object_t hb_encx264;
 extern hb_work_object_t hb_enctheora;
+extern hb_work_object_t hb_encav1;
 extern hb_work_object_t hb_encx265;
 extern hb_work_object_t hb_decavcodeca;
 extern hb_work_object_t hb_decavcodecv;

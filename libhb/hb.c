@@ -1692,6 +1692,7 @@ int hb_global_init()
     hb_register(&hb_encca_haac);
 #endif
     hb_register(&hb_enctheora);
+    hb_register(&hb_encav1);
     hb_register(&hb_encvorbis);
     hb_register(&hb_encx264);
 #ifdef USE_X265

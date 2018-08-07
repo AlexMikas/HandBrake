@@ -57,6 +57,7 @@ enum
     HB_GID_VCODEC_THEORA,
     HB_GID_VCODEC_VP8,
     HB_GID_VCODEC_VP9,
+    HB_GID_VCODEC_AV1,
     HB_GID_ACODEC_AAC,
     HB_GID_ACODEC_AAC_HE,
     HB_GID_ACODEC_AAC_PASS,
@@ -259,6 +260,7 @@ hb_encoder_internal_t hb_video_encoders[]  =
     { { "VP8",                 "VP8",        "VP8 (libvpx)",            HB_VCODEC_FFMPEG_VP8,                        HB_MUX_MASK_MKV, }, NULL, 1, HB_GID_VCODEC_VP8,    },
     { { "VP9",                 "VP9",        "VP9 (libvpx)",            HB_VCODEC_FFMPEG_VP9,                        HB_MUX_MASK_MKV, }, NULL, 1, HB_GID_VCODEC_VP9,    },
     { { "Theora",              "theora",     "Theora (libtheora)",      HB_VCODEC_THEORA,                            HB_MUX_MASK_MKV, }, NULL, 1, HB_GID_VCODEC_THEORA, },
+    { { "AV1",                 "aom_av1",    "AV1 (libaom)",            HB_VCODEC_AV1,               HB_MUX_MASK_MP4|HB_MUX_MASK_MKV, }, NULL, 1, HB_GID_VCODEC_AV1, },
 };
 int hb_video_encoders_count = sizeof(hb_video_encoders) / sizeof(hb_video_encoders[0]);
 static int hb_video_encoder_is_enabled(int encoder)

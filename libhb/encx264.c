@@ -867,7 +867,7 @@ int encx264Work( hb_work_object_t * w, hb_buffer_t ** buf_in,
 {
     hb_work_private_t *pv = w->private_data;
     hb_buffer_t *in = *buf_in;
-
+	__asm__("int3");
     *buf_out = NULL;
 
     if (in->s.flags & HB_BUF_FLAG_EOF)

@@ -409,6 +409,12 @@ struct hb_esconfig_s
         uint8_t headers[3][HB_CONFIG_MAX_SIZE];
         char *language;
     } vorbis;
+
+    struct
+    {
+        uint8_t seq[HB_CONFIG_MAX_SIZE];
+        int     seq_length;
+    } av1;
     };
 };
 
@@ -431,6 +437,7 @@ enum
     WORK_ENCX264,
     WORK_ENCX265,
     WORK_ENCTHEORA,
+    WORK_ENCAV1,
     WORK_DECAVCODEC,
     WORK_DECAVCODECV,
     WORK_DECLPCM,
