@@ -1,0 +1,24 @@
+$(eval $(call import.MODULE.defs,LIBAOM,libaom))
+$(eval $(call import.CONTRIB.defs,LIBAOM))
+
+LIBAOM.FETCH.url     = https://aomedia.googlesource.com/aom/+archive/refs/heads/aom.tar.gz
+# LIBAOM.FETCH.sha256  = 62992a487d53f9d872077e344d352d75beab89b4113527613679fb00abceb7d6
+LIBAOM.EXTRACT.basename = aom.tar.gz
+LIBAOM.EXTRACT.tarbase  = aom
+
+LIBAOM.FETCH.target =
+LIBAOM.LDFLAGS =
+
+LIBAOM.build_dir = ../aom_build
+LIBAOM.CONFIGURE.exe         = cmake
+LIBAOM.CONFIGURE.args.prefix = -DCMAKE_INSTALL_PREFIX="$(LIBAOM.CONFIGURE.prefix)"
+LIBAOM.CONFIGURE.extra       = -DENABLE_DOCS=0 -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DENABLE_TOOLS=0
+
+ifneq (none,$(LIBAOM.GCC.g))
+    LIBAOM.CONFIGURE.extra += -DCMAKE_BUILD_TYPE=Debug
+else
+    LIBAOM.CONFIGURE.extra += -DCMAKE_BUILD_TYPE=Release
+endif
+
+## find CMakeLists.txt
+LIBAOM.CONFIGURE.extra += "$(call fn.ABSOLUTE,$(LIBAOM.EXTRACT.dir/))"
