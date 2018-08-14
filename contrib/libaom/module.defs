@@ -1,37 +1,79 @@
 $(eval $(call import.MODULE.defs,LIBAOM,libaom))
 $(eval $(call import.CONTRIB.defs,LIBAOM))
 
-LIBAOM.FETCH.url     = https://aomedia.googlesource.com/aom/+archive/2c23841e75ec8d74ada2fb1bf92c852831cfaff2.tar.gz
-LIBAOM.FETCH.sha256  = 52bfda6806988153f102e746c3b064a4f117b7a13bcebee2706c54289e4157df
+LIBAOM.FETCH.url     = https://aomedia.googlesource.com/aom/+archive/refs/heads/aom.tar.gz
+# LIBAOM.FETCH.sha256  = 62992a487d53f9d872077e344d352d75beab89b4113527613679fb00abceb7d6
+LIBAOM.EXTRACT.basename = aom.tar.gz
+LIBAOM.EXTRACT.tarbase  = aom
 
-LIBAOM.CONFIGURE = $(TOUCH.exe) $@
+LIBAOM.FETCH.target =
+LIBAOM.LDFLAGS =
 
-LIBAOM.BUILD.extra = \
-    PREFIX="$(LIBAOM.CONFIGURE.prefix)" \
-    CC="$(LIBAOM.GCC.gcc)" \
-    $(LIBAOM.CONFIGURE.env.CFLAGS) \
-    RANLIB="$(RANLIB.exe)"
+LIBAOM.build_dir = ../aom_build
+LIBAOM.CONFIGURE.exe         = cmake
+LIBAOM.CONFIGURE.args.prefix = -DCMAKE_INSTALL_PREFIX="$(LIBAOM.CONFIGURE.prefix)"
+LIBAOM.CONFIGURE.extra       = -DENABLE_DOCS=0 -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 -DENABLE_TOOLS=0
 
-LIBAOM.BUILD.ntargets = libaom.a
+ifneq (none,$(LIBAOM.GCC.g))
+    LIBAOM.CONFIGURE.extra += -DCMAKE_BUILD_TYPE=Debug
+else
+    LIBAOM.CONFIGURE.extra += -DCMAKE_BUILD_TYPE=Release
+endif
 
-define LIBAOM.INSTALL
-    $(CP.exe) $(LIBAOM.EXTRACT.dir/)libaom.a $(CONTRIB.build/)lib/
-    $(CP.exe) $(LIBAOM.EXTRACT.dir/)aom_dsp_rtcd.h $(CONTRIB.build/)include/
-    $(CP.exe) $(LIBAOM.EXTRACT.dir/)aom_rtcd.h $(CONTRIB.build/)include/
-    $(CP.exe) $(LIBAOM.EXTRACT.dir/)aom_scale_rtcd.h $(CONTRIB.build/)include/
-    $(CP.exe) $(LIBAOM.EXTRACT.dir/)aom_config.h $(CONTRIB.build/)include/
-    $(CP.exe) $(LIBAOM.EXTRACT.dir/)aom_version.h $(CONTRIB.build/)include/
-    $(CP.exe) $(LIBAOM.EXTRACT.dir/)av1_rtcd.h $(CONTRIB.build/)include/
-    $(TOUCH.exe) $@
-endef
+ifeq (1,$(BUILD.cross))
+    ifeq (mingw,$(BUILD.system))
+#        LIBAOM.CONFIGURE.extra += -DWIN32=ON
+    endif
+#    LIBAOM.CONFIGURE.args.host  = -DCMAKE_SYSTEM_NAME="$(LIBAOM.CONFIGURE.host)"
+#    LIBAOM.CONFIGURE.args.build = -DCMAKE_HOST_SYSTEM="$(LIBAOM.CONFIGURE.build)"
+else
+#    LIBAOM.CONFIGURE.args.host  = -DCMAKE_HOST_SYSTEM="$(LIBAOM.CONFIGURE.host)"
+endif
 
-define LIBAOM.UNINSTALL
-    $(RM.exe) -f $(CONTRIB.build/)lib/libaom.a
-    $(RM.exe) $(LIBAOM.EXTRACT.dir/)aom_dsp_rtcd.h $(CONTRIB.build/)include/
-    $(RM.exe) $(LIBAOM.EXTRACT.dir/)aom_rtcd.h $(CONTRIB.build/)include/
-    $(RM.exe) $(LIBAOM.EXTRACT.dir/)aom_scale_rtcd.h $(CONTRIB.build/)include/
-    $(RM.exe) $(LIBAOM.EXTRACT.dir/)aom_config.h $(CONTRIB.build/)include/
-    $(RM.exe) $(LIBAOM.EXTRACT.dir/)aom_version.h $(CONTRIB.build/)include/
-    $(RM.exe) $(LIBAOM.EXTRACT.dir/)av1_rtcd.h $(CONTRIB.build/)include/
-    $(RM.exe) -f $(LIBAOM.INSTALL.target)
-endef
+## find CMakeLists.txt
+LIBAOM.CONFIGURE.extra += "$(call fn.ABSOLUTE,$(LIBAOM.EXTRACT.dir/))"
+
+#LIBAOM.INSTALL.make = $(MV.exe)
+#LIBAOM.INSTALL.args.dir = cd $(1);
+#LIBAOM.INSTALL.extra = libaom.a
+#LIBAOM.INSTALL.args = @dir !make !extra
+
+## Override operations that are not needed
+#LIBAOM.FETCH =
+#LIBAOM.VERIFY = $(TOUCH.exe) $@
+#LIBAOM.EXTRACT = $(TOUCH.exe) $@
+#LIBAOM.PATCH = $(TOUCH.exe) $@
+#LIBAOM.XCLEAN =
+
+
+#LIBAOM.CONFIGURE = $(TOUCH.exe) $@
+
+#LIBAOM.BUILD.extra = \
+#    PREFIX="$(LIBAOM.CONFIGURE.prefix)" \
+#    CC="$(LIBAOM.GCC.gcc)" \
+#    $(LIBAOM.CONFIGURE.env.CFLAGS) \
+#    RANLIB="$(RANLIB.exe)"
+
+#LIBAOM.BUILD.ntargets = libaom.a
+
+##define LIBAOM.INSTALL
+##    $(CP.exe) $(LIBAOM.EXTRACT.dir/)libaom.a $(CONTRIB.build/)lib/
+##    $(CP.exe) $(LIBAOM.EXTRACT.dir/)aom_dsp_rtcd.h $(CONTRIB.build/)include/
+##    $(CP.exe) $(LIBAOM.EXTRACT.dir/)aom_rtcd.h $(CONTRIB.build/)include/
+##    $(CP.exe) $(LIBAOM.EXTRACT.dir/)aom_scale_rtcd.h $(CONTRIB.build/)include/
+##    $(CP.exe) $(LIBAOM.EXTRACT.dir/)aom_config.h $(CONTRIB.build/)include/
+##    $(CP.exe) $(LIBAOM.EXTRACT.dir/)aom_version.h $(CONTRIB.build/)include/
+##    $(CP.exe) $(LIBAOM.EXTRACT.dir/)av1_rtcd.h $(CONTRIB.build/)include/
+##    $(TOUCH.exe) $@
+##endef
+##
+##define LIBAOM.UNINSTALL
+##    $(RM.exe) -f $(CONTRIB.build/)lib/libaom.a
+##    $(RM.exe) $(LIBAOM.EXTRACT.dir/)aom_dsp_rtcd.h $(CONTRIB.build/)include/
+##    $(RM.exe) $(LIBAOM.EXTRACT.dir/)aom_rtcd.h $(CONTRIB.build/)include/
+##    $(RM.exe) $(LIBAOM.EXTRACT.dir/)aom_scale_rtcd.h $(CONTRIB.build/)include/
+##    $(RM.exe) $(LIBAOM.EXTRACT.dir/)aom_config.h $(CONTRIB.build/)include/
+##    $(RM.exe) $(LIBAOM.EXTRACT.dir/)aom_version.h $(CONTRIB.build/)include/
+##    $(RM.exe) $(LIBAOM.EXTRACT.dir/)av1_rtcd.h $(CONTRIB.build/)include/
+##    $(RM.exe) -f $(LIBAOM.INSTALL.target)
+##endef
