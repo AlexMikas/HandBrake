@@ -331,6 +331,9 @@ static int avformatInit( hb_mux_object_t * m )
         case HB_VCODEC_AV1:
         {
             track->st->codecpar->codec_id = AV_CODEC_ID_AV1;
+            // av1 in MP4 support is experimental
+            m->oc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
+            track->st->codecpar->codec_tag = MKTAG('a','v','0','1');
 
             if (job->config.av1.seq_length != 0)
             {
