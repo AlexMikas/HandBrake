@@ -36,27 +36,55 @@ struct hb_work_private_s
 
 	aom_codec_ctx_t * codec;
 	aom_image_t * raw;
+	aom_fixed_buf_t * twopass_stats;
+
 	int frame_index;
 };
 
-int  encav1Init( hb_work_object_t * w, hb_job_t * job )
+int  encav1Init(hb_work_object_t * w, hb_job_t * job)
 {
-	hb_log(">>>>>>>>>>>>>>>>>>> encav1Init");
-
+	hb_log(">>>>>>>>>>>>>>>>>>> Run encav1Init");
+	// priv init
 	hb_work_private_t * pv = calloc(1, sizeof(hb_work_private_t));
 	w->private_data = pv;
 
 	pv->job = job;
 
 	pv->filename = hb_get_temporary_filename("av1.log");
+	// End priv init
 
+	// In Ffmpeg used aom_codec_iface *iface - But i dont know where it init
+	// UPD: aom_codec_av1_cx() 
+
+	struct aom_codec_iface *iface = aom_codec_av1_cx();
+	aom_codec_caps_t codec_caps = aom_codec_get_caps(iface);
 	aom_codec_ctx_t codec;
-	aom_codec_enc_cfg_t cfg;
-	int frame_count = 0;
+	aom_codec_enc_cfg_t cfg = { 0 };
+	aom_codec_flags_t flags = 0;
 	aom_image_t raw;
 	aom_codec_err_t res;
-	//AvxVideoInfo info;
-	//AvxVideoWriter *writer = NULL;
+
+	if ((res = aom_codec_enc_config_default(iface, &cfg, 0)) != AOM_CODEC_OK)
+	{
+		hb_error("Failed to get config: %s\n", aom_codec_err_to_string(res));
+	}
+	/* set_pix_fmt
+	if (set_pix_fmt(avctx, codec_caps, &enccfg, &flags, &img_fmt))
+	{
+		hb_error("Failed to set pixel format");
+	}
+
+	if(!avctx->bit_rate)
+	{
+		if(avctx->rc_max_rate || avctx->rc_buffer_size || avctx->rc_initial_buffer_occupancy)
+		{
+			av_log( avctx, AV_LOG_ERROR, "Rate control parameters set without a bitrate\n");
+			return AVERROR(EINVAL);
+		}
+	}
+	*/
+
+	int frame_count = 0;
 	const AvxInterface *encoder = NULL;
 	const int fps = 30;
 	const int bitrate = 200;
@@ -88,18 +116,11 @@ int  encav1Init( hb_work_object_t * w, hb_job_t * job )
 	{
 		hb_error("Invalid frame size: %dx%d", frame_width, frame_height);
 	}
-	// !!! - AOM_IMG_FMT_I420 - one of supported img formats. Mb here must be a choice of it?
-	// mb smth like "findImgFormatByNane"
-	if (!aom_img_alloc(&raw, AOM_IMG_FMT_I420, frame_width,
-		frame_height, 1))
-	{
-		hb_error("Failed to allocate image.");
-	}
 
 	//keyframe_interval = (int)strtol(keyframe_interval_arg, NULL, 0);
 	//if (keyframe_interval < 0) die("Invalid keyframe interval value.");
 
-	printf("Using %s\n", aom_codec_iface_name(encoder->codec_interface()));
+	hb_log("Using %s\n", aom_codec_iface_name(encoder->codec_interface()));
 
 	res = aom_codec_enc_config_default(encoder->codec_interface(), &cfg, 0);
 	if (res)
@@ -109,22 +130,117 @@ int  encav1Init( hb_work_object_t * w, hb_job_t * job )
 
 	cfg.g_w = frame_width;
 	cfg.g_h = frame_height;
-	cfg.g_timebase.num = 1;
-	cfg.g_timebase.den = fps;
-	cfg.rc_target_bitrate = bitrate;
+	cfg.g_timebase.num = job->vrate.num;
+	cfg.g_timebase.den = job->vrate.den;
+	// Maximum number of threads to use
+	// cfg.g_threads = avctx->thread_count;
+	cfg.rc_target_bitrate = job->vbitrate; // ?
+	/* FFmpeg code
 
-	if (aom_codec_enc_init(&codec, encoder->codec_interface(), &cfg, 0))
+	// Allow lagged encoding // NOT FOUND
+	if (ctx->lag_in_frames >= 0)
+	{
+		enccfg.g_lag_in_frames = ctx->lag_in_frames;
+	}
+
+
+*/
+// Multi-pass Encoding Mode
+	if (job->pass_id & HB_PASS_ENCODE_1ST)
+	{
+		cfg.g_pass = AOM_RC_FIRST_PASS;
+	}
+	else if (job->pass_id & HB_PASS_ENCODE_2ND)
+	{
+		cfg.g_pass = AOM_RC_LAST_PASS;
+	}
+	else
+	{
+		cfg.g_pass = AOM_RC_ONE_PASS;
+	}
+		
+/*
+    // Rate control algorithm to use
+	if (avctx->rc_min_rate == avctx->rc_max_rate &&
+		avctx->rc_min_rate == avctx->bit_rate && avctx->bit_rate) 
+	{
+		enccfg.rc_end_usage = AOM_CBR;
+	} else if (ctx->crf >= 0) {
+		enccfg.rc_end_usage = AOM_CQ;
+		if (!avctx->bit_rate)
+			enccfg.rc_end_usage = AOM_Q;
+	}
+
+
+
+
+	if (avctx->bit_rate) {
+	enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
+	AV_ROUND_NEAR_INF);
+	} else if (enccfg.rc_end_usage != AOM_Q) {
+	if (enccfg.rc_end_usage == AOM_CQ) {
+	enccfg.rc_target_bitrate = 1000000;
+	} else {
+	avctx->bit_rate = enccfg.rc_target_bitrate * 1000;
+	av_log(avctx, AV_LOG_WARNING,
+	"Neither bitrate nor constrained quality specified, using default bitrate of %dkbit/sec\n",
+	enccfg.rc_target_bitrate);
+	}
+	}
+
+	if (avctx->qmin >= 0)
+	enccfg.rc_min_quantizer = avctx->qmin;
+	if (avctx->qmax >= 0)
+	enccfg.rc_max_quantizer = avctx->qmax;
+
+	if (enccfg.rc_end_usage == AOM_CQ || enccfg.rc_end_usage == AOM_Q) {
+	if (ctx->crf < enccfg.rc_min_quantizer || ctx->crf > enccfg.rc_max_quantizer) {
+	av_log(avctx, AV_LOG_ERROR,
+	"CQ level %d must be between minimum and maximum quantizer value (%d-%d)\n",
+	ctx->crf, enccfg.rc_min_quantizer, enccfg.rc_max_quantizer);
+	return AVERROR(EINVAL);
+	}
+	}
+
+
+
+
+	*/
+
+
+
+
+	if (aom_codec_enc_init(&codec, encoder->codec_interface(), &cfg, flags))
 	{
 		hb_error(&codec, "Failed to initialize encoder");
 	}
 
+	// img init
+	// frame->format           = buf->f.fmt;
+	// !!! - AOM_IMG_FMT_I420 - one of supported img formats. Mb here must be a choice of it?
+	// mb smth like "findImgFormatByNane"
+	if (!aom_img_alloc(&raw, AOM_IMG_FMT_I420, frame_width,
+		frame_height, 1))
+	{
+		hb_error("Failed to allocate image.");
+	}
+	/*
+	// provide dummy value to initialize wrapper, values will be updated each _encode()
+    aom_img_wrap(&ctx->rawimg, img_fmt, avctx->width, avctx->height, 1,
+                 (unsigned char*)1);
+	*/
+
+	// End img init
+
 	pv->codec = &codec;
 	pv->raw = &raw;
 	pv->frame_index = 0;
+
+	/// Headers
 	// w->config initialization
 	int frame_cnt = 0;
+	
 	int header_length = w->config->av1.seq_length = 32;
-
 	char header[header_length];
 
 	header[0] = 'D';
@@ -143,6 +259,7 @@ int  encav1Init( hb_work_object_t * w, hb_job_t * job )
 	mem_put_le32(header + 28, 0);                    // unused
 	
 	memcpy(w->config->av1.seq, header, header_length);
+	/// End Headers
 
 	return 0;
 }
@@ -150,6 +267,7 @@ int  encav1Init( hb_work_object_t * w, hb_job_t * job )
 int get_aom_img(aom_image_t *img, hb_buffer_t *in)
 {
 	int plane;
+	uint8_t * data = in->data;
 
 	for (plane = 0; plane < 3; ++plane)
 	{
@@ -159,17 +277,25 @@ int get_aom_img(aom_image_t *img, hb_buffer_t *in)
 		const int w = aom_img_plane_width(img, plane) *
 			((img->fmt & AOM_IMG_FMT_HIGHBITDEPTH) ? 2 : 1);
 		const int h = aom_img_plane_height(img, plane);
-		/*
 		int y;
 
 		for (y = 0; y < h; ++y)
 		{
-		//if (fread(buf, 1, w, file) != (size_t)w) return 0;
-
-		buf += stride;
+			/*
+			memcpy(buf, in->plane[plane].data+y*w, w);
+			buf += w + stride;
+			*/
+			memcpy(buf, data, w);
+			data += w;
+			buf += stride;
 		}
+		/*
+		unsigned char temp_buf[w*h];
+		memcpy(temp_buf, in->plane[plane].data, w*h);
+		//buf = &temp_buf;
+		//memcpy(buf, *in->plane[plane].data, w*h); // just thinks
+		img->planes[plane] = temp_buf;
 		*/
-		memcpy(buf, *in->plane[plane].data, w*h); // just thinks
 	}
 
 	return 0;
