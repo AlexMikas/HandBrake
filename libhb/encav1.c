@@ -188,12 +188,12 @@ int  encav1Init(hb_work_object_t * w, hb_job_t * job)
 
     cfg.g_bit_depth = AOM_BITS_8;
 
+    cfg.g_threads = 8;
+
     if (aom_codec_enc_init(&codec, iface, &cfg, flags))
     {
         hb_error(&codec, "Failed to initialize encoder");
     }
-
-
 
     // img init
     // frame->format           = buf->f.fmt;
@@ -253,11 +253,6 @@ int get_aom_img(aom_image_t *img, hb_buffer_t *in)
 
     if (in)
     {
-        /*
-        img->planes[AOM_PLANE_Y] = in->plane[0].data;
-        img->planes[AOM_PLANE_U] = in->plane[1].data;
-        img->planes[AOM_PLANE_V] = in->plane[2].data;
-        */
         for (plane = 0; plane < 3; ++plane)
         {
             uint8_t * data = in->plane[plane].data;
